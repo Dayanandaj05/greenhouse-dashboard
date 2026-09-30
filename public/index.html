@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GreenGrid</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22c0-4.2-3.8-7-3.8-12A5.2 5.2 0 0 1 13 5c2.6 0 4 2 4 4 0 5-3.8 7.8-3.8 12Z"/>
+            <path d="M12 22V10"/>
+          </svg>
+          <span class="wordmark">GreenGrid</span>
+        </div>
+        <nav class="main-nav" aria-label="Main Navigation">
+          <a href="#/dashboard" class="nav-link" id="nav-dashboard">Dashboard</a>
+          <a href="#/readings" class="nav-link" id="nav-readings">Readings</a>
+        </nav>
+        <button class="btn btn-primary" id="btn-log-reading" aria-label="Log reading">+ Log reading</button>
+      </div>
+    </header>
+
+    <main id="main-content" class="container" role="main">
+      <!-- Views will be injected here -->
+    </main>
+
+    <footer class="app-footer" role="contentinfo">
+      <div class="container">
+        Community Greenhouse Network - data refreshes every 5 seconds
+      </div>
+    </footer>
+  </div>
+
+  <!-- Templates -->
+  <template id="tpl-dashboard">
+    <div class="view-dashboard">
+      <div class="status-bar">
+        <div class="live-indicator">
+          <span class="dot"></span>
+          <span class="status-text" id="sync-status">Last synced...</span>
+        </div>
+      </div>
+      
+      <section class="kpi-strip" id="kpi-container" aria-label="Key Performance Indicators">
+        <!-- KPIs injected here -->
+      </section>
+
+      <section class="beds-grid" id="beds-container" aria-label="Greenhouse Beds Status">
+        <!-- Beds injected here -->
+      </section>
+
+      <section class="trend-section card" aria-label="Trend History">
+        <div class="trend-header">
+          <h2>Trend History</h2>
+          <div class="trend-controls">
+            <select id="trend-bed-select" aria-label="Select bed"></select>
+            <div class="metric-toggle">
+              <button class="btn-toggle active" data-metric="soil_moisture">Moisture</button>
+              <button class="btn-toggle" data-metric="temperature">Temperature</button>
+              <button class="btn-toggle" data-metric="humidity">Humidity</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </section>
+    </div>
+  </template>
+
+  <template id="tpl-readings">
+    <div class="view-readings card">
+      <div class="readings-header">
+        <h2>Readings Log</h2>
+        <div class="filters">
+          <select id="filter-bed" aria-label="Filter by bed"></select>
+          <select id="filter-source" aria-label="Filter by source">
+            <option value="">All Sources</option>
+            <option value="sensor">Sensor</option>
+            <option value="manual">Manual</option>
+          </select>
+          <select id="filter-limit" aria-label="Limit results">
+            <option value="25">25 items</option>
+            <option value="50">50 items</option>
+            <option value="100">100 items</option>
+          </select>
+          <button class="btn btn-secondary" id="btn-refresh">Refresh</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="readings-table" id="readings-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Bed</th>
+              <th>Moisture %</th>
+              <th>Temp °C</th>
+              <th>Humidity %</th>
+              <th>Source</th>
+              <th>Notes</th>
+              <th>Recorded</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows injected here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </template>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="modal-overlay" hidden></div>
+
+  <!-- Log / Edit Reading Modal -->
+  <div class="modal" id="modal-reading" role="dialog" aria-modal="true" aria-labelledby="modal-reading-title" hidden>
+    <div class="modal-header">
+      <h2 id="modal-reading-title">Log Reading</h2>
+      <button class="btn-close" id="btn-close-reading" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="form-reading">
+      <input type="hidden" id="input-id">
+      
+      <div class="form-group">
+        <label for="input-bed">Bed</label>
+        <select id="input-bed" required></select>
+        <div class="error-msg" id="error-bed"></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="input-moisture">Soil Moisture (%)</label>
+          <input type="number" id="input-moisture" min="0" max="100" step="0.1" required>
+          <div class="error-msg" id="error-moisture"></div>
+        </div>
+        <div class="form-group">
+          <label for="input-temp">Temperature (°C)</label>
+          <input type="number" id="input-temp" min="-10" max="60" step="0.1" required>
+          <div class="error-msg" id="error-temp"></div>
+        </div>
+        <div class="form-group">
+          <label for="input-humidity">Humidity (%)</label>
+          <input type="number" id="input-humidity" min="0" max="100" step="0.1" required>
+          <div class="error-msg" id="error-humidity"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="input-recorded">Recorded at</label>
+        <input type="datetime-local" id="input-recorded">
+      </div>
+
+      <div class="form-group">
+        <label for="input-notes">Notes <span class="char-count" id="notes-count">0/255</span></label>
+        <textarea id="input-notes" maxlength="255" rows="2"></textarea>
+      </div>
+      
+      <div class="server-error" id="form-server-error" aria-live="assertive"></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-reading">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-reading">Save Reading</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal" id="modal-delete" role="dialog" aria-modal="true" aria-labelledby="modal-delete-title" hidden>
+    <div class="modal-header">
+      <h2 id="modal-delete-title">Delete Reading</h2>
+      <button class="btn-close" id="btn-close-delete" aria-label="Close modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this reading?</p>
+      <div id="delete-details" class="reading-details-box"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="btn-cancel-delete">Cancel</button>
+      <button class="btn btn-danger" id="btn-confirm-delete">Delete</button>
+    </div>
+  </div>
+
+  <!-- Passcode Modal -->
+  <div class="modal" id="modal-passcode" role="dialog" aria-modal="true" aria-labelledby="modal-passcode-title" hidden>
+    <div class="modal-header">
+      <h2 id="modal-passcode-title">Authentication Required</h2>
+      <button class="btn-close" id="btn-close-passcode" aria-label="Close modal">&times;</button>
+    </div>
+    <form id="form-passcode">
+      <div class="form-group">
+        <label for="input-passcode">Enter community passcode</label>
+        <input type="password" id="input-passcode" required>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
